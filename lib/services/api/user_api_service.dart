@@ -9,6 +9,50 @@ class UserApiService {
   final String _baseUrl = 'http://172.19.0.181:8000/api';
   final log = Logger();
 
+  Future<User?> checkActiveSession() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final sessionId = prefs.getString('X-Session-ID');
+      log.d('session es: $sessionId');
+
+      if (sessionId != null) {
+        final response = await http.post(
+          Uri.parse('$_baseUrl/login-check-session'),
+          headers: {
+            'X-Session-ID': sessionId,
+          },
+        );
+
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          final userData = data['user'];
+
+          final sessionKey = data['session_id'];
+          if (sessionKey.isNotEmpty) {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('X-Session-ID', sessionKey);
+          }
+
+          return User(
+            id: userData["id"],
+            email: userData["email"],
+            name: userData["nombre"],
+            lastName: userData["apellido"],
+            userName: userData["username"],
+          );
+        } else {
+          final body = jsonDecode(response.body);
+          throw (body["message"]);
+        }
+      }else {
+        return null;
+      }
+    } catch (e) {
+      log.e(e);
+      rethrow;
+    }
+  }
+
   Future<User?> loginUserByCode(String code) async {
     try {
       log.d('Entra a login por código QR');
@@ -17,7 +61,8 @@ class UserApiService {
         Uri.parse('$_baseUrl/login-qr'),
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'App/$code (Flutter)',
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36',
+          'X-Device-Type': 'android',
         },
         body: {'code_qr': code},
       );
@@ -59,7 +104,8 @@ class UserApiService {
         Uri.parse('$_baseUrl/login-endpoint'),
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'User-Agent': 'App/$name (Flutter)',
+          'User-Agent': 'Mozilla/5.0 (Linux; Android 11; Pixel 5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.91 Mobile Safari/537.36',
+          'X-Device-Type': 'android',
         },
         body: {
           'username': name,
@@ -107,11 +153,13 @@ class UserApiService {
           'Content-Type': 'application/x-www-form-urlencoded',
           'User-Agent': 'App/$name (Flutter)',
           'X-Session-ID': sessionCookie,
+          'X-Device-Type': 'android',
         },
       );
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        await prefs.remove('X-Session-ID');
         return data["message"];
       } else {
         throw (response.body.toString());

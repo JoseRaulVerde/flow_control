@@ -9,6 +9,22 @@ class UserActionsService extends ChangeNotifier {
 
   UserActionsService(this.userProvider);
 
+
+  Future<bool> checkActiveSession() async {
+      try {
+          final user = await UserApiService().checkActiveSession();
+          if (user != null) {
+            userProvider.setUser(user);
+            return true; // éxito
+          } else {
+            return false;
+          }
+      } catch (e) {
+        log.e('Error en login: $e');
+        return false;
+      }
+    }
+
   /// Retorna `null` si todo salió bien, o un mensaje de error si falló
   Future<String?> login(String name, String pass) async {
     try {
