@@ -43,10 +43,10 @@ class _ScanningCodeState extends State<ScanningCode> {
     });
     final error = await userActions.loginByCode(code);
     if (error == null && mounted) {
-      FocusScope.of(context).unfocus(); // Cierra teclado si estaba activo
       Navigator.pushReplacementNamed(context, AppRoutes.home);
     } else if (mounted) {
       showAlertModal(context, error ?? 'Ocurrió un error inesperado');
+      widget.focusNode.requestFocus();
     }
 
     setState(() {
@@ -67,6 +67,7 @@ class _ScanningCodeState extends State<ScanningCode> {
           child: SizedBox(
             width: 400,
             child: Column(
+              spacing: 8,
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
@@ -77,6 +78,7 @@ class _ScanningCodeState extends State<ScanningCode> {
                   TextField(
                     showCursor: false,
                     obscureText: true,
+                    controller: _barcodeController,
                     focusNode: widget.focusNode,
                     keyboardType: TextInputType.none,
                     decoration: FormStyles.getInputDecoration(
@@ -93,6 +95,14 @@ class _ScanningCodeState extends State<ScanningCode> {
                 LoadingCheck(message: 'Buscando Usuario', icon: Icon(Icons.search), loading: _isLoading)
                 : 
                 SizedBox(),
+                ElevatedButton(
+                  onPressed: (){
+                    Navigator.pop(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:  Color.fromARGB(255, 226, 231, 240),
+                  ), child: const  Text('Cancelar'),
+                )
               ],
             ),
           ),
