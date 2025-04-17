@@ -4,12 +4,15 @@ import 'package:flow_control/provider/user_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'routes.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: "assets/.env");
   runApp( MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => ProductsProvider()), // Agregar ProductsProvider
+        ChangeNotifierProvider(create: (_) => ProductsProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => TimerProvider()),
       ],

@@ -1,9 +1,9 @@
 import 'package:flow_control/hooks/use_user_actions.dart';
 import 'package:flow_control/modals/alert_message.dart';
+import 'package:flow_control/services/provider/user_actions_service.dart';
 import 'package:flow_control/utils/form_styles.dart';
 import 'package:flow_control/widgets/scanning_code.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -21,9 +21,11 @@ class LoginScreenState extends State<LoginScreen> {
   final FocusNode _passwordFofus = FocusNode();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final log = Logger();
-  
+  late final UserActionsService userActions;  
 
   bool _isLoading = false;
+  bool _isReseting = false;
+
 
   
 
@@ -39,8 +41,28 @@ class LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    // _userNameFocus.requestFocus();
+
+    // Accede al hook después de que el contexto esté listo
+    Future.delayed(Duration.zero, () {
+      userActions = useUserActions(context);
+      _checkActiveSession();
+    });
   }
+
+  Future<void> _checkActiveSession() async {
+    setState(() => _isReseting = true);
+
+    final isLogged = await userActions.checkActiveSession();
+
+    if (isLogged && mounted) {
+      Navigator.pushReplacementNamed(context, '/home');
+    } else {
+      log.i('No hay sesión activa');
+    }
+
+    setState(() => _isReseting = false);
+  }
+
 
   @override
   void dispose() {
@@ -51,6 +73,8 @@ class LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+
+    
     return Scaffold(
       body: SafeArea(
         child: SingleChildScrollView(
@@ -84,7 +108,14 @@ class LoginScreenState extends State<LoginScreen> {
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 40),
-                child: _formLoginData(),
+                child: _isReseting
+                    ? SizedBox(
+                      height: 300,
+                      width: 200,
+                      child: Center(
+                        child:  CircularProgressIndicator()),
+                    )
+                    : _formLoginData(),              
               ),
             ],
           ),
@@ -165,7 +196,7 @@ class LoginScreenState extends State<LoginScreen> {
             IconButton(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
               onPressed: (){
-                _scanCodeUser;
+                _scanCodeUser();
                 showDialog(context: context, builder: (_)=>ScanningCode(focusNode: FocusNode(),),
                 );
                 },
